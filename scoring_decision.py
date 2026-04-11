@@ -42,7 +42,8 @@ class CandidateScoringInput(BaseModel):
 RETENU_MIN = 62
 A_REVOIR_MIN = 38
 NO_MATCH_CAP = 35.0
-RETENU_REQUIRED_COVERAGE_MIN = 0.80
+RETENU_MIN_REQ = 0.75  # minimum d'obligatoires pour RETENU
+RETENU_STAGE_MIN_REQ = 0.50  # version plus souple pour stage
 
 WEIGHTS = {
     "standard": {"skills": 0.70, "experience": 0.20, "education": 0.10},
@@ -205,25 +206,24 @@ def classify(global_score: float) -> str:
     return "REJETE"
 
 
-def adjust_decision(
+def final_decision(
     decision: str,
+    job_type: str,
     required_skills: list[str],
     matched_required_skills: list[str],
     preferred_skills: list[str],
 ) -> str:
-    # Le score global est calcule normalement,
-    # mais on durcit la decision finale dans certains cas limites.
-
-    # Si la couverture des competences obligatoires reste trop faible,
-    # un candidat ne passe pas directement en RETENU meme si son score global
-    # depasse le seuil.
+    # On garde le score, mais on rend la decision un peu plus stricte.
     if required_skills:
+        min_required_coverage = RETENU_MIN_REQ
+        if job_type == "stage":
+            min_required_coverage = RETENU_STAGE_MIN_REQ
+
         required_coverage = len(matched_required_skills) / len(required_skills)
-        if decision == "RETENU" and required_coverage < RETENU_REQUIRED_COVERAGE_MIN:
+        if decision == "RETENU" and required_coverage < min_required_coverage:
             return "A_REVOIR"
 
-    # Si le poste ne fournit aucun vrai signal competences,
-    # on evite qu'un score neutre suffise a produire un RETENU.
+    # Un score neutre sur les competences ne suffit pas pour RETENU.
     if not required_skills and not preferred_skills and decision == "RETENU":
         return "A_REVOIR"
 
@@ -285,8 +285,9 @@ def compute_scoring(data: CandidateScoringInput) -> dict:
     )
 
     decision = classify(global_score)
-    decision = adjust_decision(
+    decision = final_decision(
         decision,
+        job.job_type,
         job.required_skills,
         skills.matched_required_skills,
         job.preferred_skills,
