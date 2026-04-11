@@ -203,14 +203,14 @@ Donc pour le moment, je me base sur des elements assez simples :
 
 ## Exemple simple de test
 
-Pour verifier que la logique tenait la route, j'ai aussi essaye un cas simule un peu plus limite, ou le candidat est retenu, mais pas avec une grosse marge.
+Pour verifier que la logique tenait la route, j'ai aussi essaye un cas simule un peu plus limite, ou le candidat a un score correct mais reste dans une zone de prudence.
 
 ### Entree simulee
 
 ```json
 {
   "candidate_id": "C02",
-  "candidate_name": "tchehit shawarma wlah",
+  "candidate_name": "Shawarma guy",
   "job": {
     "job_title": "Analyste de donnees",
     "job_type": "emploi",
@@ -239,10 +239,10 @@ Pour verifier que la logique tenait la route, j'ai aussi essaye un cas simule un
 ```json
 {
   "candidat_id": "C02",
-  "candidat_nom": "tchehit shawarma wlah",
+  "candidat_nom": "Shawarma guy,
   "poste_titre": "Analyste de donnees",
-  "score_global": 63.93,
-  "decision": "RETENU",
+  "score_global": 63.92,
+  "decision": "A_REVOIR",
   "scores_detail": {
     "competences": {
       "score": 63.75,
@@ -274,13 +274,14 @@ Pour verifier que la logique tenait la route, j'ai aussi essaye un cas simule un
 
 ### Lecture rapide du resultat
 
-Dans ce cas, le candidat est `RETENU`, mais de maniere assez limite :
+Dans ce cas, le candidat tombe en `A_REVOIR` :
 
 - il manque encore une competence obligatoire
 - son experience est en dessous de ce qui est demande
 - sa formation est un peu en dessous du niveau attendu
 
-Donc ce n'est pas un profil "tres fort", mais il passe quand meme le seuil de `RETENU` de justesse.
+Donc ce n'est pas un mauvais profil, mais il ne passe pas directement en `RETENU`.
+Le score global est correct, mais la decision reste prudente parce que la couverture des competences obligatoires reste insuffisante pour un `RETENU`.
 
 On peut aussi lire ca sous forme de tableau :
 
@@ -289,8 +290,8 @@ On peut aussi lire ca sous forme de tableau :
 | Competences | `63.75` |
 | Experience | `62.5` |
 | Formation | `68.0` |
-| Score global | `63.93` |
-| Decision | `RETENU` |
+| Score global | `63.92` |
+| Decision | `A_REVOIR` |
 
 ---
 
@@ -310,28 +311,34 @@ A ce stade, cette logique de scoring reste volontairement simple, donc il y a qu
 - le score formation n'est pas encore un score tres fin ou tres progressif  
   on est plutot sur une logique par paliers, donc on n'a pas encore une note tres detaillee en pourcentage sur cette partie
 
-- les poids (`standard`, `junior`, `senior`, `stage`) sont pour l'instant des choix metier simples pour une first prototype
+- la decision `RETENU` a ete volontairement un peu durcie  
+  par exemple, un candidat avec un score global correct peut quand meme rester en `A_REVOIR` si la couverture des competences obligatoires reste trop faible
+
+- quand il n'y a aucune competence exploitable dans le poste  
+  le score competences reste neutre, mais on evite qu'un candidat monte directement en `RETENU` uniquement a cause de cette neutralite
+
+- les poids (`standard`, `junior`, `senior`, `stage`) sont pour l'instant des choix metier simples pour une V1  
   ils sont coherents pour commencer, mais ils ne viennent pas encore d'un vrai calibrage sur beaucoup de donnees reelles
 
-- certains intitules comme `entry level`, `intermediaire`, `stagiaire`, `internship`, etc.. doivent etre bien normalisés avant d'arriver a cette etape  
+- certains intitules comme `entry level`, `intermediaire`, `stagiaire`, `internship`, etc. doivent etre bien normalises avant d'arriver a cette etape  
   sinon ils risquent de tomber par defaut sur la logique standard
 
 - si les competences obligatoires existent mais que le resultat de matching n'est pas fourni, l'etape retourne `NON_EVALUE`  
   ce choix est volontaire pour eviter de produire un score qui aurait l'air correct alors qu'il manque en realite une partie importante des donnees
 
-Donc pour l'instant, l'objectif n'est pas d'avoir un scoring parfait, mais d'avoir une base coherente, lisible et ajustable quand les sorties reelles des étapes precedentes seront stabilisées.
+Donc pour l'instant, l'objectif n'est pas d'avoir un scoring parfait, mais d'avoir une base coherente, lisible et ajustable quand les sorties reelles des etapes precedentes seront stabilisees.
 
 ---
 
 ## En resume
 
-De mon cote, l'etape 3 est donc pensée comme :
+De mon cote, l'etape 3 est donc pensee comme :
 
 1. choix des poids selon le poste
 2. calcul des scores competences / experience / formation
 3. calcul du score global + decision
 4. generation des flags pour la suite
 
-La logique est la, mais elle reste adaptable a ce que vous allez réellement sortir cote etapes 1 et 2.
+La logique est la, mais elle reste adaptable a ce que vous allez reellement sortir cote etapes 1 et 2.
 
 Donc si, de votre cote, vous avez deja une idee plus precise du format final de sortie de l'etape 2, ou si certains champs ne vous semblent pas realistes / utiles, dites-le-moi et je pourrai ajuster le scoring en consequence.
