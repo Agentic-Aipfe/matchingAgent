@@ -42,6 +42,7 @@ class CandidateScoringInput(BaseModel):
 RETENU_MIN = 62
 A_REVOIR_MIN = 38
 NO_MATCH_CAP = 35.0
+RETENU_REQUIRED_COVERAGE_MIN = 0.80
 
 WEIGHTS = {
     "standard": {"skills": 0.70, "experience": 0.20, "education": 0.10},
@@ -204,6 +205,31 @@ def classify(global_score: float) -> str:
     return "REJETE"
 
 
+def adjust_decision(
+    decision: str,
+    required_skills: list[str],
+    matched_required_skills: list[str],
+    preferred_skills: list[str],
+) -> str:
+    # Le score global est calcule normalement,
+    # mais on durcit la decision finale dans certains cas limites.
+
+    # Si la couverture des competences obligatoires reste trop faible,
+    # un candidat ne passe pas directement en RETENU meme si son score global
+    # depasse le seuil.
+    if required_skills:
+        required_coverage = len(matched_required_skills) / len(required_skills)
+        if decision == "RETENU" and required_coverage < RETENU_REQUIRED_COVERAGE_MIN:
+            return "A_REVOIR"
+
+    # Si le poste ne fournit aucun vrai signal competences,
+    # on evite qu'un score neutre suffise a produire un RETENU.
+    if not required_skills and not preferred_skills and decision == "RETENU":
+        return "A_REVOIR"
+
+    return decision
+
+
 def build_flags(decision: str, missing_required_skills: list[str]) -> dict:
     send = decision in {"RETENU", "A_REVOIR"}
 
@@ -259,6 +285,12 @@ def compute_scoring(data: CandidateScoringInput) -> dict:
     )
 
     decision = classify(global_score)
+    decision = adjust_decision(
+        decision,
+        job.required_skills,
+        skills.matched_required_skills,
+        job.preferred_skills,
+    )
     flags = build_flags(decision, skills.missing_required_skills)
 
     return {
