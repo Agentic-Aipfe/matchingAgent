@@ -1,10 +1,10 @@
 # Étape 3 — Scoring & Décision
 
-Salut,
+HOLA AMIGOS
 
-De mon côté, j’ai travaillé sur l’étape 3 de l’Agent 2, c’est-à-dire la partie **scoring et prise de décision** après le matching CV ↔ offre.
+welll de  mon côté, j’ai travaillé sur l’étape 3 de l’Agent 2, c’est à dire la partie **scoring et prise de décision** après le matching CV ↔ offre.
 
-L’idée ici n’était pas de refaire le matching, mais plutôt de poser une logique simple et défendable pour transformer les résultats du matching en :
+L’idée ici est de poser une logique simple  pour transformer les résultats du matching en :
 
 - un score global
 - une décision
@@ -30,7 +30,7 @@ J’ai gardé 4 profils simples :
 
 L’idée derrière ça est assez naturelle :
 
-- pour un poste standard, les compétences restent le critère principal
+- pour un poste standard, les compétences restent le critère principal  (ca couvre aussi les postes Intermediaires)
 - pour un junior, la formation compte un peu plus
 - pour un senior, l’expérience compte plus
 - pour un stage, la formation et le potentiel comptent davantage
@@ -61,19 +61,31 @@ Dans la logique actuelle :
 - les compétences appréciées donnent un bonus
 - mais ce bonus ne doit pas compenser totalement une absence sur les obligatoires
 
+ Exemple simple :
+
+- l’offre demande comme compétences obligatoires : Python, SQL, Docker
+- le candidat a : Python et SQL
+- il lui manque : Docker
+
+Donc les compétences obligatoires retrouvées sont 2 sur 3, et la base du score compétences part de là.
+
+Si le candidat a aussi une compétence appréciée retrouvée, elle peut ajouter un petit bonus, mais elle ne remplace pas une compétence obligatoire manquante.
+
+
 Donc si un candidat n’a rien sur les obligatoires, il ne peut pas être sauvé uniquement par des compétences “bonus”.
 
 ### Expérience
 
-Pour l’instant, dans cette version, l’expérience est notée de manière simple à partir des mois :
+Pour l’instant, dans cette vesion at leaast, l’expérience est notée de manière simple à partir des mois :
 
-- expérience totale du candidat
+- expérience totale du candidat(on doit calculer exp_month_total du candidat, on l'a pas encore fait imken)
 - expérience demandée par le poste
 
 Si le poste précise une durée attendue, on compare les mois du candidat à cette durée.
 Si aucune durée n’est précisée, on utilise une règle simple basée sur le total de mois.
 
-Je n’ai pas ajouté ici de logique plus avancée sur la pertinence sémantique de l’expérience, parce que ça dépendra de ce que l’étape 2 produira réellement plus tard.
+Je n’ai pas ajouté ici une logique plus avancée pour savoir si l’expérience est vraiment liée au poste, car cela dépendra de ce que l’étape 2 pourra réellement produire plus tard.
+
 
 ### Formation
 
@@ -96,6 +108,13 @@ La logique est :
 - légèrement en dessous -> score moyen
 - plus bas -> score plus faible
 - rien détecté -> score faible ou neutre selon le cas
+
+ Exemple simple :
+
+- candidat : Licence en informatique -> niveau 3
+- poste : Master / Bac+5 -> niveau 4
+- comme le candidat est juste un niveau en dessous, on lui donne un score intermédiaire, pas un très mauvais score
+
 
 Donc ici on est sur une logique de niveau, pas encore sur une logique fine de spécialisation.
 
@@ -127,7 +146,7 @@ L’idée actuelle est simple :
 - si le candidat est `RETENU` ou `A_REVOIR`, on peut le transmettre à l’étape suivante
 - si besoin, on transmet aussi les compétences obligatoires manquantes comme cibles prioritaires
 
-Ça permet à la suite du pipeline de savoir quoi faire sans relire toute la logique de scoring.
+Ça permet à l’étape suivante de savoir quoi faire sans relire toute la logique de scoring.
 
 ---
 
@@ -157,21 +176,20 @@ Donc j’ai surtout cherché à voir si le comportement global “a du sens”.
 
 Le point le plus important, c’est que cette étape dépend complètement de ce que l’étape 1 et surtout l’étape 2 vont réellement fournir.
 
-Donc ce que j’ai fait ici, c’est poser une logique métier claire de Step 3, **sans figer trop tôt des hypothèses trop détaillées sur vos sorties**.
+Donc ce que j’ai fait ici, c’est poser une logique métier claire de l'étape 3.
 
 En gros :
 
-- si vos sorties restent simples, on peut déjà faire tourner une V1 correcte
-- si plus tard vous fournissez des signaux plus riches, on pourra raffiner le scoring
+-j’ai essayé de faire une version simple mais cohérente de l’étape 3 avec ce qu’on peut déjà imaginer comme sortie raisonnable des étapes avant.
+- si plus tard vous fournissez des signaux plus riches, on pourra raffiner le scoring.
 
-Par exemple, plus tard on pourra éventuellement intégrer des choses comme :
+Donc pour le moment, je me base sur des éléments assez simples :
 
-- une notion plus fine de coverage
-- une distinction plus riche entre obligatoires et appréciées
-- un signal de pertinence sémantique de l’expérience
-- un meilleur alignement de la formation
+- les compétences obligatoires et appréciées
+- ce qui a été matché ou non
+- le nombre de mois d’expérience
+- les textes de formation
 
-Mais je ne voulais pas imposer tout ça maintenant tant qu’on n’a pas stabilisé vos sorties réelles.
 
 ---
 
@@ -184,6 +202,6 @@ De mon côté, l’étape 3 est donc pensée comme :
 3. calcul du score global + décision
 4. génération des flags pour la suite
 
-La logique est là, mais elle reste adaptable à ce que vous allez réellement sortir côté étapes précédentes.
+La logique est là, mais elle reste adaptable à ce que vous allez réellement sortir côté étapes 1 et 2.
 
 Donc si, de votre côté, vous avez déjà une idée plus précise du format final de sortie de l’étape 2, ou si certains champs ne vous semblent pas réalistes / utiles, dites-le-moi et je pourrai ajuster le scoring en conséquence.
