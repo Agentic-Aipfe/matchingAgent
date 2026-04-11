@@ -2,29 +2,20 @@
 
 HOLA AMIGOS
 
-De mon cote, j'ai travaille sur l'etape 3 de l'Agent 2, c'est-a-dire la partie scoring et prise de decision apres le matching CV <-> offre.
+De mon cote, j'ai travaille sur l'etape 3 de l'Agent 2, donc la partie scoring et prise de decision apres le matching CV <-> offre.
 
-L'idee ici est de poser une logique simple pour transformer les resultats du matching en :
+Le but ici est simple :
 
-- un score global
-- une decision
-- des details par critere
-- des flags pour la suite
+- sortir un score global
+- sortir une decision
+- garder un detail par critere
+- envoyer des flags utiles pour la suite
 
-Je suis parti de ce qu'une etape "Scoring & Decision" doit naturellement faire, de la slide de l'etape 3, et aussi de l'exemple JSON qu'on avait deja dans l'etape 4 du rapport final.
+Je me suis base sur le role naturel d'une etape "Scoring & Decision", sur la slide de l'etape 3, et sur l'exemple JSON qu'on avait deja dans l'etape 4 du rapport final.
 
-Petit point technique : j'ai utilise Pydantic dans le fichier surtout pour structurer les donnees d'entree de maniere claire.
+Petit point technique : j'ai utilise Pydantic surtout pour garder une structure d'entree claire pour le poste, les competences, l'experience et la formation.
 
-Concretement, ca me permet de definir proprement :
-
-- les infos du poste
-- les infos de matching des competences
-- l'experience
-- la formation
-
-L'idee ici n'est pas de compliquer le projet, mais juste d'avoir une base lisible et propre avant de lancer le scoring.
-
-Donc j'ai structure l'etape 3 autour de 4 taches.
+Donc j'ai organise l'etape 3 autour de 4 taches.
 
 ---
 
@@ -32,21 +23,21 @@ Donc j'ai structure l'etape 3 autour de 4 taches.
 
 La premiere chose que fait l'etape 3, c'est choisir un profil de ponderation selon le type ou le niveau du poste.
 
-J'ai garde 4 profils simples :
+J'ai garde 4 profils :
 
 - `standard`
 - `junior`
 - `senior`
 - `stage`
 
-L'idee derriere ca est assez naturelle :
+L'idee est la suivante :
 
-- pour un poste standard, les competences restent le critere principal (ca couvre aussi les postes intermediaires)
-- pour un junior, la formation compte un peu plus
-- pour un senior, l'experience compte plus
-- pour un stage, la formation et le potentiel comptent davantage
+- en `standard`, les competences restent le critere principal
+- en `junior`, la formation compte un peu plus
+- en `senior`, l'experience compte plus
+- en `stage`, la formation et le potentiel comptent davantage
 
-Donc avant meme de calculer le score, on decide avec quels poids on va lire le profil du candidat.
+Le mode `standard` couvre aussi les postes intermediaires.
 
 ---
 
@@ -66,35 +57,27 @@ Le score competences repose surtout sur :
 - les competences appreciees retrouvees
 - les competences obligatoires manquantes
 
-Dans la logique actuelle :
-
-- les competences obligatoires pesent le plus
-- les competences appreciees donnent un bonus
-- mais ce bonus ne doit pas compenser totalement une absence sur les obligatoires
+Les obligatoires pesent le plus. Les appreciees donnent un bonus, mais ce bonus ne doit pas compenser une absence sur les obligatoires.
 
 Exemple simple :
 
-- l'offre demande comme competences obligatoires : Python, SQL, Docker
-- le candidat a : Python et SQL
-- il lui manque : Docker
+- l'offre demande Python, SQL, Docker
+- le candidat a Python et SQL
+- il lui manque Docker
 
-Donc les competences obligatoires retrouvees sont 2 sur 3, et la base du score competences part de la.
-
-Si le candidat a aussi une competence appreciee retrouvee, elle peut ajouter un petit bonus, mais elle ne remplace pas une competence obligatoire manquante.
-
-Donc si un candidat n'a rien sur les obligatoires, il ne peut pas etre sauve uniquement par des competences "bonus".
+Donc la base du score competences part surtout de 2 obligatoires retrouves sur 3.
 
 ### Experience
 
-Pour l'instant, dans cette version au moins, l'experience est notee de maniere simple a partir des mois :
+Dans cette version, l'experience est notee de maniere simple a partir des mois :
 
 - experience totale du candidat
 - experience demandee par le poste
 
-Si le poste precise une duree attendue, on compare les mois du candidat a cette duree.
-Si aucune duree n'est precisee, on utilise une regle simple basee sur le total de mois.
+Si le poste precise une duree, on compare les mois du candidat a cette duree.
+Sinon on applique une regle simple basee sur le total de mois.
 
-Je n'ai pas ajoute ici une logique plus avancee pour savoir si l'experience est vraiment liee au poste, car cela dependra de ce que l'etape 2 pourra reellement produire plus tard.
+Je n'ai pas ajoute ici une logique plus avancee sur la pertinence reelle de l'experience, parce que cela dependra de ce que l'etape 2 pourra produire plus tard.
 
 ### Formation
 
@@ -111,7 +94,7 @@ Ensuite on compare :
 - le niveau detecte cote candidat
 - le niveau detecte cote poste
 
-La logique est :
+En gros :
 
 - niveau atteint ou depasse -> bon score
 - legerement en dessous -> score moyen
@@ -122,7 +105,6 @@ Exemple simple :
 
 - candidat : Licence en informatique -> niveau 3
 - poste : Master / Bac+5 -> niveau 4
-- comme le candidat est juste un niveau en dessous, on lui donne un score intermediaire, pas un tres mauvais score
 
 Donc ici on est sur une logique de niveau, pas encore sur une logique fine de specialisation.
 
@@ -142,7 +124,10 @@ J'ai aussi ajoute un garde-fou :
 
 si le poste a des competences obligatoires mais qu'aucune n'a ete retrouvee, alors le score global est plafonne.
 
-L'objectif est d'eviter qu'un candidat obtienne artificiellement un score correct juste grace a l'experience ou a la formation alors qu'il manque completement le socle de competences attendu.
+J'ai aussi rendu la decision `RETENU` un peu plus stricte :
+
+- pour un poste standard, il faut quand meme une couverture minimale des obligatoires
+- pour un stage, cette regle est plus souple
 
 ---
 
@@ -155,62 +140,51 @@ L'idee actuelle est simple :
 - si le candidat est `RETENU` ou `A_REVOIR`, on peut le transmettre a l'etape suivante
 - si besoin, on transmet aussi les competences obligatoires manquantes comme cibles prioritaires
 
-Ca permet a l'etape suivante de savoir quoi faire sans relire toute la logique de scoring.
-
 ---
 
 ## Comment j'ai teste cette logique
 
-Pour verifier que la logique tenait la route, je l'ai essayee sur plusieurs cas de test simules avec de fausses entrees structurees.
+J'ai essaye plusieurs cas simules :
 
-Par exemple :
+- un candidat fort
+- un candidat borderline
+- un candidat faible
 
-- un candidat fort avec beaucoup de competences matchees, de l'experience et une bonne formation
-- un candidat borderline avec un profil partiellement aligne
-- un candidat faible avec peu de competences retrouvees et peu d'experience
-
-L'objectif n'etait pas de prouver scientifiquement que les poids sont parfaits, mais de verifier que :
+Le but etait surtout de verifier que :
 
 - le scoring reste coherent
-- la decision suit une logique comprehensible
-- les cas tres faibles ne passent pas artificiellement
+- la decision reste lisible
+- les cas faibles ne passent pas artificiellement
 - les cas moyens tombent plutot dans `A_REVOIR`
 - les cas forts montent naturellement en `RETENU`
-
-Donc j'ai surtout cherche a voir si le comportement global "a du sens".
 
 ---
 
 ## Important : cette etape depend forcement des sorties des etapes precedentes
 
-Le point le plus important, c'est que cette etape depend completement de ce que l'etape 1 et surtout l'etape 2 vont reellement fournir.
+Cette etape depend completement de ce que l'etape 1 et surtout l'etape 2 vont reellement fournir.
 
-Donc ce que j'ai fait ici, c'est poser une logique metier claire de l'etape 3.
+Donc ici, j'ai surtout essaye de poser une logique metier claire avec des elements simples :
 
-En gros :
-
-- j'ai essaye de faire une version simple mais coherente de l'etape 3 avec ce qu'on peut deja imaginer comme sortie raisonnable des etapes avant
-- si plus tard vous fournissez des signaux plus riches, on pourra raffiner le scoring
-
-Donc pour le moment, je me base sur des elements assez simples :
-
-- les competences obligatoires et appreciees
+- competences obligatoires et appreciees
 - ce qui a ete matche ou non
 - le nombre de mois d'experience
 - les textes de formation
+
+Si plus tard vous fournissez des signaux plus riches, on pourra raffiner le scoring.
 
 ---
 
 ## Exemple simple de test
 
-Pour verifier que la logique tenait la route, j'ai aussi essaye un cas simule un peu plus limite, ou le candidat a un score correct mais reste dans une zone de prudence.
+Pour verifier que la logique tenait la route, j'ai aussi essaye un cas simule un peu plus limite.
 
 ### Entree simulee
 
 ```json
 {
   "candidate_id": "C02",
-  "candidate_name": "Shawarma guy",
+  "candidate_name": "Sara El Amrani",
   "job": {
     "job_title": "Analyste de donnees",
     "job_type": "emploi",
@@ -239,10 +213,10 @@ Pour verifier que la logique tenait la route, j'ai aussi essaye un cas simule un
 ```json
 {
   "candidat_id": "C02",
-  "candidat_nom": "Shawarma guy,
+  "candidat_nom": "Sara El Amrani",
   "poste_titre": "Analyste de donnees",
   "score_global": 63.92,
-  "decision": "A_REVOIR",
+  "decision": "RETENU",
   "scores_detail": {
     "competences": {
       "score": 63.75,
@@ -274,16 +248,13 @@ Pour verifier que la logique tenait la route, j'ai aussi essaye un cas simule un
 
 ### Lecture rapide du resultat
 
-Dans ce cas, le candidat tombe en `A_REVOIR` :
+Dans ce cas :
 
 - il manque encore une competence obligatoire
 - son experience est en dessous de ce qui est demande
 - sa formation est un peu en dessous du niveau attendu
 
-Donc ce n'est pas un mauvais profil, mais il ne passe pas directement en `RETENU`.
-Le score global est correct, mais la decision reste prudente parce que la couverture des competences obligatoires reste insuffisante pour un `RETENU`.
-
-On peut aussi lire ca sous forme de tableau :
+Donc ce n'est pas un profil tres fort, mais il peut quand meme passer en `RETENU`.
 
 | Partie | Resultat |
 |---|---|
@@ -291,54 +262,33 @@ On peut aussi lire ca sous forme de tableau :
 | Experience | `62.5` |
 | Formation | `68.0` |
 | Score global | `63.92` |
-| Decision | `A_REVOIR` |
+| Decision | `RETENU` |
 
 ---
 
 ## Limites actuelles du scoring
 
-A ce stade, cette logique de scoring reste volontairement simple, donc il y a quelques limites a garder en tete.
+A ce stade, cette logique reste simple, donc il y a quelques limites a garder en tete :
 
-- le scoring depend entierement de ce que les etapes 1 et 2 vont reellement fournir  
-  donc si leur format final change, la logique de l'etape 3 devra probablement etre adaptee aussi
+- le scoring depend completement des sorties des etapes 1 et 2
+- l'experience repose surtout sur le nombre de mois
+- la formation repose sur des mots-cles et une logique par paliers
+- les poids sont des choix metier simples pour une V1
+- certains intitules comme `entry level`, `intermediaire`, `stagiaire`, `internship`, etc. doivent etre bien normalises avant cette etape
+- si les competences obligatoires existent mais que le matching n'est pas fourni, on retourne `NON_EVALUE`
 
-- la partie experience repose surtout sur le nombre de mois  
-  pour l'instant, on regarde surtout si le candidat a moins, autant ou plus d'experience que ce qui est demande, mais on ne mesure pas encore de facon fine si cette experience est vraiment tres liee au poste
-
-- la partie formation repose sur des niveaux detectes a partir de mots-cles  
-  ca donne deja une base simple et utile, mais ca reste parfois approximatif selon la maniere dont les diplomes sont formules dans le texte
-
-- le score formation n'est pas encore un score tres fin ou tres progressif  
-  on est plutot sur une logique par paliers, donc on n'a pas encore une note tres detaillee en pourcentage sur cette partie
-
-- la decision `RETENU` a ete volontairement un peu durcie  
-  par exemple, un candidat avec un score global correct peut quand meme rester en `A_REVOIR` si la couverture des competences obligatoires reste trop faible
-
-- quand il n'y a aucune competence exploitable dans le poste  
-  le score competences reste neutre, mais on evite qu'un candidat monte directement en `RETENU` uniquement a cause de cette neutralite
-
-- les poids (`standard`, `junior`, `senior`, `stage`) sont pour l'instant des choix metier simples pour une V1  
-  ils sont coherents pour commencer, mais ils ne viennent pas encore d'un vrai calibrage sur beaucoup de donnees reelles
-
-- certains intitules comme `entry level`, `intermediaire`, `stagiaire`, `internship`, etc. doivent etre bien normalises avant d'arriver a cette etape  
-  sinon ils risquent de tomber par defaut sur la logique standard
-
-- si les competences obligatoires existent mais que le resultat de matching n'est pas fourni, l'etape retourne `NON_EVALUE`  
-  ce choix est volontaire pour eviter de produire un score qui aurait l'air correct alors qu'il manque en realite une partie importante des donnees
-
-Donc pour l'instant, l'objectif n'est pas d'avoir un scoring parfait, mais d'avoir une base coherente, lisible et ajustable quand les sorties reelles des etapes precedentes seront stabilisees.
+Donc l'objectif ici n'est pas d'avoir un scoring parfait, mais une base lisible et ajustable.
 
 ---
 
 ## En resume
 
-De mon cote, l'etape 3 est donc pensee comme :
+De mon cote, l'etape 3 est pensee comme :
 
 1. choix des poids selon le poste
 2. calcul des scores competences / experience / formation
 3. calcul du score global + decision
 4. generation des flags pour la suite
 
-La logique est la, mais elle reste adaptable a ce que vous allez reellement sortir cote etapes 1 et 2.
+Si, de votre cote, vous avez deja une idee plus precise du format final de sortie de l'etape 2, je pourrai ajuster le scoring en consequence.
 
-Donc si, de votre cote, vous avez deja une idee plus precise du format final de sortie de l'etape 2, ou si certains champs ne vous semblent pas realistes / utiles, dites-le-moi et je pourrai ajuster le scoring en consequence.
