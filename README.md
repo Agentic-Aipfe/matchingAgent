@@ -184,7 +184,7 @@ Pour verifier que la logique tenait la route, j'ai aussi essaye un cas simule un
 ```json
 {
   "candidate_id": "C02",
-  "candidate_name": "Sara El Amrani",
+  "candidate_name": "Shwarma Guy",
   "job": {
     "job_title": "Analyste de donnees",
     "job_type": "emploi",
@@ -213,7 +213,7 @@ Pour verifier que la logique tenait la route, j'ai aussi essaye un cas simule un
 ```json
 {
   "candidat_id": "C02",
-  "candidat_nom": "Sara El Amrani",
+  "candidat_nom": "Shawarma Guy",
   "poste_titre": "Analyste de donnees",
   "score_global": 63.92,
   "decision": "RETENU",
