@@ -210,7 +210,7 @@ Pour verifier que la logique tenait la route, j'ai aussi essaye un cas simule un
 ```json
 {
   "candidate_id": "C02",
-  "candidate_name": "Sara El Amrani",
+  "candidate_name": "tchehit shawarma wlah",
   "job": {
     "job_title": "Analyste de donnees",
     "job_type": "emploi",
@@ -239,7 +239,7 @@ Pour verifier que la logique tenait la route, j'ai aussi essaye un cas simule un
 ```json
 {
   "candidat_id": "C02",
-  "candidat_nom": "Sara El Amrani",
+  "candidat_nom": "tchehit shawarma wlah",
   "poste_titre": "Analyste de donnees",
   "score_global": 63.93,
   "decision": "RETENU",
@@ -310,28 +310,28 @@ A ce stade, cette logique de scoring reste volontairement simple, donc il y a qu
 - le score formation n'est pas encore un score tres fin ou tres progressif  
   on est plutot sur une logique par paliers, donc on n'a pas encore une note tres detaillee en pourcentage sur cette partie
 
-- les poids (`standard`, `junior`, `senior`, `stage`) sont pour l'instant des choix metier simples pour une V1  
+- les poids (`standard`, `junior`, `senior`, `stage`) sont pour l'instant des choix metier simples pour une first prototype
   ils sont coherents pour commencer, mais ils ne viennent pas encore d'un vrai calibrage sur beaucoup de donnees reelles
 
-- certains intitules comme `entry level`, `intermediaire`, `stagiaire`, `internship`, etc. doivent etre bien normalises avant d'arriver a cette etape  
+- certains intitules comme `entry level`, `intermediaire`, `stagiaire`, `internship`, etc.. doivent etre bien normalisés avant d'arriver a cette etape  
   sinon ils risquent de tomber par defaut sur la logique standard
 
 - si les competences obligatoires existent mais que le resultat de matching n'est pas fourni, l'etape retourne `NON_EVALUE`  
   ce choix est volontaire pour eviter de produire un score qui aurait l'air correct alors qu'il manque en realite une partie importante des donnees
 
-Donc pour l'instant, l'objectif n'est pas d'avoir un scoring parfait, mais d'avoir une base coherente, lisible et ajustable quand les sorties reelles des etapes precedentes seront stabilisees.
+Donc pour l'instant, l'objectif n'est pas d'avoir un scoring parfait, mais d'avoir une base coherente, lisible et ajustable quand les sorties reelles des étapes precedentes seront stabilisées.
 
 ---
 
 ## En resume
 
-De mon cote, l'etape 3 est donc pensee comme :
+De mon cote, l'etape 3 est donc pensée comme :
 
 1. choix des poids selon le poste
 2. calcul des scores competences / experience / formation
 3. calcul du score global + decision
 4. generation des flags pour la suite
 
-La logique est la, mais elle reste adaptable a ce que vous allez reellement sortir cote etapes 1 et 2.
+La logique est la, mais elle reste adaptable a ce que vous allez réellement sortir cote etapes 1 et 2.
 
 Donc si, de votre cote, vous avez deja une idee plus precise du format final de sortie de l'etape 2, ou si certains champs ne vous semblent pas realistes / utiles, dites-le-moi et je pourrai ajuster le scoring en consequence.
