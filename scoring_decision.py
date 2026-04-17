@@ -11,20 +11,19 @@ POIDS = {
 }
 
 
-def score_sur_100(valeur: float) -> float:
+# Convertit une similarité entre 0 et 1 en score sur 100.
+def score_sur_100(valeur):
     return round(valeur * 100, 2)
 
 
 # Score sémantique global: moyenne simple des trois similarités.
 def calculer_score(
-    similarite_competences: float,
-    similarite_experience: float,
-    similarite_formation: float,
-) -> dict:
+    similarite_competences,
+    similarite_experience,
+    similarite_formation,
+):
     moyenne = (
-        similarite_competences
-        + similarite_experience
-        + similarite_formation
+        similarite_competences + similarite_experience + similarite_formation
     ) / 3
 
     return {
@@ -37,9 +36,9 @@ def calculer_score(
 
 # Choix du profil métier selon le type et le niveau du poste.
 def choisir_poids(
-    type_poste: str = "emploi",
-    niveau_poste: str = "standard",
-) -> tuple[dict[str, float], str]:
+    type_poste="emploi",
+    niveau_poste="standard",
+):
     if type_poste == "stage":
         return POIDS["stage"], "stage"
 
@@ -54,9 +53,9 @@ def choisir_poids(
 
 # Score final pondéré: il traduit le score sémantique en lecture métier.
 def calculer_score_pondere(
-    scores: dict[str, float],
-    poids: dict[str, float],
-) -> float:
+    scores,
+    poids,
+):
     total = (
         scores["competences"] * poids["competences"]
         + scores["experience"] * poids["experience"]
@@ -65,7 +64,8 @@ def calculer_score_pondere(
     return round(total, 2)
 
 
-def calculer_decision(score: float) -> str:
+# Transforme le score final en décision métier à partir des seuils.
+def calculer_decision(score):
     if score >= SEUIL_RETENU:
         return "RETENU"
 
@@ -76,7 +76,7 @@ def calculer_decision(score: float) -> str:
 
 
 # Flags simples envoyés à l'orchestrateur pour la suite du pipeline.
-def construire_flags(decision: str, lacunes: list[str]) -> dict:
+def construire_flags(decision, lacunes):
     envoyer = decision in {"RETENU", "A_REVOIR"}
 
     return {
@@ -85,17 +85,17 @@ def construire_flags(decision: str, lacunes: list[str]) -> dict:
     }
 
 
-# Point d'entrée unique du fichier fusionné:
+# Point d'entrée unique du fichier pour calculer le résultat final à partir des données d'entrée.:
 # 1. lit les similarités déjà calculées par le matching
 # 2. calcule le score sémantique
 # 3. applique la pondération métier
 # 4. produit la décision finale
+# Point d'entrée principal du fichier.
+# Il lit les similarités du matching, calcule le score sémantique,
+# applique la pondération métier puis renvoie le résultat final.
 def calculer_resultat(
-    donnees: dict,
-    contexte_poste: dict | None = None,
-) -> dict:
-    contexte_poste = contexte_poste or {}
-
+    donnees,
+):
     competences = donnees["skills"]
     experience = donnees["experience"]
     formation = donnees["education"]
@@ -107,8 +107,8 @@ def calculer_resultat(
     )
 
     poids, mode = choisir_poids(
-        type_poste=contexte_poste.get("job_type", "emploi"),
-        niveau_poste=contexte_poste.get("job_level", "standard"),
+        type_poste=donnees.get("job_type", "emploi"),
+        niveau_poste=donnees.get("job_level", "standard"),
     )
 
     score_final = calculer_score_pondere(scores, poids)
